@@ -1,0 +1,44 @@
+[tool.poetry]
+name = "ag-legalization-form-automation"
+version = "0.1.0"
+description = "Project that automate to fill the forms to legalize Sim Cards from Tigo telecomunications"
+authors = ["faanagor <faanagor@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11"
+selenium = "^4.27.1"
+python-dotenv = "^1.0.1"
+
+[tool.poetry.group.dev.dependencies]
+black = "24.4.2"
+flake8 = "7.0.0"
+isort = "5.13.2"
+pre-commit = "3.7.0"
+poetry-plugin-export = "1.8.0"
+
+[tool.black]
+line-length = 120
+target-version = ["py311"]
+
+[tool.isort]
+profile = "black"
+sections = ["STDLIB", "THIRDPARTY", "LOCALFOLDER", "FIRSTPARTY"]
+no_lines_before = "FIRSTPARTY"
+
+[tool.flake8]
+exclude = ["venv", ".venv", "ENV", "env", ".env"]
+per-file-ignores = "__init__.py:F401"
+max-line-length = 120
+ignore = ["E203", "W503", "W504"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+
+
+

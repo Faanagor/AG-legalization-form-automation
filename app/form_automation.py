@@ -1,6 +1,5 @@
-import email
-import imaplib
 import os
+import time
 
 from dotenv import load_dotenv
 from selenium import webdriver
@@ -10,62 +9,87 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-CHROMEDRIVER_PATH = "AG-legalization-form-automation/statics/chromedriver-win64/chromedriver.exe"
-# Carga las variables de entorno
+# Cargar credenciales del archivo .env
 load_dotenv()
-service = Service(executable_path=CHROMEDRIVER_PATH)
-# Configuración del WebDriver
-driver = webdriver.Chrome()  # Usa el driver adecuado para tu navegador
-driver.get("https://example.com/formulario")
-
-# Llenar y enviar el formulario
-try:
-    # Esperar a que el campo esté disponible
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "campo-usuario")))
-    usuario = driver.find_element(By.ID, "campo-usuario")
-    usuario.send_keys("mi_usuario")
-
-    password = driver.find_element(By.ID, "campo-password")
-    password.send_keys("mi_password")
-    password.send_keys(Keys.RETURN)
-except Exception as e:
-    print(f"Error: {e}")
-    driver.quit()
+EMAIL = os.getenv("EMAIL")
+PASSWORD = os.getenv("PASSWORD")
+CHROMEDRIVER_PATH = "statics/chromedriver-win64/chromedriver.exe"
 
 
-# Obtener el código del mensaje (Ejemplo con IMAP)
-def obtener_codigo_email():
-    imap_host = "imap.gmail.com"
-    email_user = os.getenv("EMAIL_USER")
-    email_pass = os.getenv("EMAIL_PASS")
+def send_gmail(to_email, subject, message):
+    """Función para enviar un correo usando Gmail y Selenium."""
+    # Configuración del controlador
+    # service = Service("ruta/a/chromedriver")  # Cambia la ruta según tu instalación
+    service = Service(executable_path=CHROMEDRIVER_PATH)
+    driver = webdriver.Chrome(service=service)
+    driver.get("https://mail.google.com/")
+    wait = WebDriverWait(driver, 15)
 
-    with imaplib.IMAP4_SSL(imap_host) as mail:
-        mail.login(email_user, email_pass)
-        mail.select("inbox")
-        _, data = mail.search(None, "ALL")
-        latest_email_id = data[0].split()[-1]
-        _, email_data = mail.fetch(latest_email_id, "(RFC822)")
-        for response_part in email_data:
-            if isinstance(response_part, tuple):
-                msg = email.message_from_bytes(response_part[1])
-                if msg.is_multipart():
-                    for part in msg.walk():
-                        if part.get_content_type() == "text/plain":
-                            body = part.get_payload(decode=True).decode()
-                            # Extrae el código con regex o búsqueda
-                            return body.split("Código:")[1].strip()
-    return None
+    try:
+        # Iniciar sesión
+        wait.until(EC.presence_of_element_located((By.ID, "identifierId"))).send_keys(EMAIL, Keys.RETURN)
+        time.sleep(2)  # Espera para cargar la página de contraseña
+        wait.until(EC.presence_of_element_located((By.NAME, "Passwd"))).send_keys(PASSWORD, Keys.RETURN)
+
+        # Redactar un correo
+        wait.until(EC.element_to_be_clickable((By.XPATH, "//div[text()='Redactar']"))).click()
+        time.sleep(2)  # Espera para cargar el formulario de redacción
+        wait.until(EC.presence_of_element_located((By.NAME, "to"))).send_keys(to_email)
+        driver.find_element(By.NAME, "subjectbox").send_keys(subject)
+        driver.find_element(By.XPATH, "//div[@aria-label='Cuerpo del mensaje']").send_keys(message)
+
+        # Enviar el correo
+        driver.find_element(By.XPATH, "//div[text()='Enviar']").click()
+        print("Correo enviado con éxito.")
+
+    except Exception as e:
+        print(f"Error al enviar el correo: {e}")
+    finally:
+        # Cerrar el navegador
+        time.sleep(5)
+        driver.quit()
 
 
-# Insertar el código en el formulario
-try:
-    codigo = obtener_codigo_email()
-    if codigo:
-        campo_codigo = driver.find_element(By.ID, "campo-codigo")
-        campo_codigo.send_keys(codigo)
-        boton_enviar = driver.find_element(By.ID, "boton-enviar")
-        boton_enviar.click()
-    else:
-        print("No se pudo obtener el código.")
-finally:
-    driver.quit()
+# Ejemplo de uso
+if __name__ == "__main__":
+    DESTINATARIO = "faanagor@gmail.com"
+    ASUNTO = "Asunto de prueba"
+    MENSAJE = "Este es un mensaje de prueba enviado con Selenium."
+    send_gmail(DESTINATARIO, ASUNTO, MENSAJE)
+
+
+# import time
+
+# from selenium import webdriver
+# from selenium.webdriver.common.keys import Keys
+# from selenium.webdriver.chrome.service import Service
+# from selenium.webdriver.chrome.options import Options
+
+# CHROMEDRIVER_PATH = "statics/chromedriver-win64/chromedriver.exe"
+# URL = "https://gmail.com"
+# USER_CREDENTIAL = "est.forozco460@smart.edu.co"
+# PASSWORD_CREDENTIAL = "Sm4rt4256*"
+
+# chrome_options = Options()
+# chrome_options.add_argument("--disable-dev-shm-usage")
+# chrome_options.add_argument("--no-sandbox")
+# chrome_options.add_argument("--user-data-dir=/path/to/custom/temp")  # Cambia la ruta por una válida en tu sistema
+
+# service = Service(executable_path=CHROMEDRIVER_PATH)
+# driver = webdriver.Chrome(service=service, options=chrome_options)
+
+# driver.get(URL)
+
+# # Interactúa con el formulario de inicio de sesión
+# try:
+#     user = driver.find_element("id", "identifierId")
+#     user.send_keys(USER_CREDENTIAL)
+#     user.send_keys(Keys.ENTER)
+#     time.sleep(10)
+#     password = driver.find_element("name", "password")
+#     password.send_keys(PASSWORD_CREDENTIAL)
+#     password.send_keys(Keys.ENTER)
+# except Exception as e:
+#     print(f"Error: {e}")
+# finally:
+#     driver.quit()
